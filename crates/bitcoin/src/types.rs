@@ -332,7 +332,8 @@ pub struct Transaction {
     pub version: i32,
     pub inputs: Vec<TransactionInput>,
     pub outputs: Vec<TransactionOutput>,
-    pub lock_at: LockTime,
+    pub block_height: Option<u32>, //FIXME: why is this optional?
+    pub locktime: Option<u32>,     //FIXME: why is this optional?
 }
 
 #[cfg_attr(test, mockable)]
@@ -343,21 +344,6 @@ impl Transaction {
 
     pub fn hash(&self) -> H256Le {
         sha256d_le(&self.format_with(true))
-    }
-}
-
-// https://en.bitcoin.it/wiki/NLockTime
-#[derive(PartialEq, Debug, Clone)]
-pub enum LockTime {
-    /// time as unix timestamp
-    Time(u32),
-    BlockHeight(u32),
-}
-
-// for testing code
-impl Default for LockTime {
-    fn default() -> Self {
-        Self::BlockHeight(0)
     }
 }
 
@@ -673,7 +659,8 @@ impl Default for TransactionBuilder {
                 version: 2,
                 inputs: vec![],
                 outputs: vec![],
-                lock_at: LockTime::BlockHeight(0),
+                block_height: Some(0),
+                locktime: None,
             },
         }
     }
@@ -690,12 +677,14 @@ impl TransactionBuilder {
     }
 
     pub fn with_block_height(&mut self, block_height: u32) -> &mut Self {
-        self.transaction.lock_at = LockTime::BlockHeight(block_height);
+        self.transaction.block_height = Some(block_height);
+        self.transaction.locktime = None;
         self
     }
 
     pub fn with_locktime(&mut self, locktime: u32) -> &mut Self {
-        self.transaction.lock_at = LockTime::Time(locktime);
+        self.transaction.locktime = Some(locktime);
+        self.transaction.block_height = None;
         self
     }
 

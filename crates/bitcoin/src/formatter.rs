@@ -200,9 +200,10 @@ impl Formattable<bool> for Transaction {
             }
         }
 
-        match self.lock_at {
-            LockTime::BlockHeight(b) | LockTime::Time(b) => formatter.format(b),
-        };
+        // only block_height or locktime should ever be Some
+        if let Some(b) = self.block_height.or(self.locktime) {
+            formatter.format(b)
+        }
 
         formatter.result()
     }

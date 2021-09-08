@@ -348,10 +348,10 @@ pub fn parse_transaction(raw_transaction: &[u8]) -> Result<Transaction, Error> {
 
     // https://en.bitcoin.it/wiki/NLockTime
     let locktime_or_blockheight: u32 = parser.parse()?;
-    let lock_at = if locktime_or_blockheight < LOCKTIME_THRESHOLD {
-        LockTime::BlockHeight(locktime_or_blockheight)
+    let (locktime, block_height) = if locktime_or_blockheight < LOCKTIME_THRESHOLD {
+        (None, Some(locktime_or_blockheight))
     } else {
-        LockTime::Time(locktime_or_blockheight)
+        (Some(locktime_or_blockheight), None)
     };
 
     if flags != 0 {
@@ -362,7 +362,8 @@ pub fn parse_transaction(raw_transaction: &[u8]) -> Result<Transaction, Error> {
         version,
         inputs,
         outputs,
-        lock_at,
+        block_height,
+        locktime,
     })
 }
 
@@ -694,7 +695,8 @@ pub(crate) mod tests {
         assert!(matches!(inputs[0].source, TransactionInputSource::Coinbase(_)));
         assert!(matches!(inputs[1].source, TransactionInputSource::FromOutput(_, _)));
         assert_eq!(outputs.len(), 1);
-        assert_eq!(transaction.lock_at, LockTime::BlockHeight(0));
+        assert_eq!(transaction.locktime, None);
+        assert_eq!(transaction.block_height, Some(0));
     }
 
     #[test]
@@ -716,7 +718,8 @@ pub(crate) mod tests {
             &outputs[0].script.as_hex(),
             "a9144a1154d50b03292b3024370901711946cb7cccc387"
         );
-        assert_eq!(transaction.lock_at, LockTime::BlockHeight(0));
+        assert_eq!(transaction.block_height, Some(0));
+        assert_eq!(transaction.locktime, None);
     }
 
     #[test]
